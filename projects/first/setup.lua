@@ -52,8 +52,12 @@ ProjectCore.Update =  Pipeline()
     end
     
     local FuncUpdateSaving = function()
+        
+      --  print(111,curRoom.name)
         local loaderStatus, isBlockingSave = loader:Update(curRoom)
+       local curRoom = room:getCurrentRoom()
         if loaderStatus == true then
+             
             if curRoom.name ~= "saving" and isBlockingSave then 
                 room:push("saving")
             end
@@ -95,7 +99,7 @@ ProjectCore.Update =  Pipeline()
 --
 --    -------------------начало load
 --    
-    --loader:KillSaveFiles()
+   -- loader:KillSaveFiles()
     loader:Start()
     room.storage:Load()
     room:enter("extra") --комната по-умолчанию

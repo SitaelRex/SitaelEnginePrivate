@@ -7,6 +7,19 @@ local write, writeIndent, writers, refCount, createStringChunk;
 
 local persistence = {}
 
+function string:cut(reference) --сокращенный вырезатель gsub
+    return self:gsub(reference, "")
+end;
+
+local function GetTableLenght(t)
+    local result = 0
+    for _,_ in pairs(t) do
+        result = result + 1 
+    end;
+    return result
+end;
+
+
 local function recursivelyDelete( item ) --вылет, если находишься в удаляемой папке во время удаления
     if love.filesystem.getInfo( item , "directory" ) then
         for _, child in ipairs( love.filesystem.getDirectoryItems( item )) do
@@ -96,6 +109,7 @@ local function getChunkIdx(chunksCount,int)
 end;
 
 persistence.store = function (path, ...) --path as a string
+    love.thread.getChannel( 'persistenceInfo' ):push( 0 )
     local path = path:cut(".lua")
     local refObjectsChunk = createStringChunk()
     local n = select("#", ...);
@@ -148,7 +162,7 @@ persistence.store = function (path, ...) --path as a string
     file:close();
     compressedData = nil
 
-    local constantCount = utils.GetTableLenght(objRefCount)
+    local constantCount = GetTableLenght(objRefCount)
     local chunksCount = math.ceil( constantCount / maxConstantsInChunk )
     local constsInChunk = constantCount/chunksCount
 
@@ -164,7 +178,7 @@ persistence.store = function (path, ...) --path as a string
     for key, object in pairs(rawTable) do
         local rc = {}
         refCount(rc, object); 
-        local consts =  utils.GetTableLenght(rc)
+        local consts =  GetTableLenght(rc)
         constCounter = constCounter + consts
         
         if constCounter > maxConstantsInChunk then --начинаем новый чанк
@@ -221,7 +235,8 @@ persistence.store = function (path, ...) --path as a string
     end;
     
     collectgarbage()
-    coroutine.yield(100,true)
+    love.thread.getChannel( 'persistenceInfo' ):push( 100 )
+   -- coroutine.yield(100,true)
 end;
 
 persistence.load = function (path)

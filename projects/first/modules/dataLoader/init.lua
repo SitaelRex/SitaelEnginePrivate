@@ -131,15 +131,15 @@ local config = {
 }
 config.icon_inner_max_radius = config.icon_outer_radius-config.icon_line_width/2
 
-loader.draw = function() --save/load icon
-    if loader.HasActiveSaveProcess() then
-        love.graphics.setLineWidth(config.icon_line_width)
-        love.graphics.circle("line",750,550,config.icon_outer_radius)
-        love.graphics.setLineWidth(1)
-        love.graphics.circle("fill",750,550,config.icon_inner_max_radius/100 * (100 - loader.GetSaveProgress () ) )
-    end;
-    
-    love.graphics.print("SaveProcessQueueLen: "..saveQueue.list.size, 0,100)
-end;
+--loader.Draw = function() --save/load icon
+--    if loader.HasActiveSaveProcess() then
+--        love.graphics.setLineWidth(config.icon_line_width)
+--        love.graphics.circle("line",750,550,config.icon_outer_radius)
+--        love.graphics.setLineWidth(1)
+--        love.graphics.circle("fill",750,550,config.icon_inner_max_radius/100 * (100 - loader.GetSaveProgress () ) )
+--    end;
+--    
+--    love.graphics.print("SaveProcessQueueLen: "..saveQueue.list.size, 0,100)
+--end;
 
 return loader;

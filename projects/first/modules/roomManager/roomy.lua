@@ -132,6 +132,7 @@ function Manager:pop(load_new_data,...)
 	local next = self._scenes[#self._scenes - 1]
 	self:emit('leave', next, ...)
 	self._scenes[#self._scenes] = nil
+    --print(22,#self._scenes)
     room.current_room = next.name
 end
 

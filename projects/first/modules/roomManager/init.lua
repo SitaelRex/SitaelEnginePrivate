@@ -38,11 +38,11 @@ end;
 
 
 roomManager.push = function (self,room_name)
-  self.current_room = room_name
+  --self.current_room = room_name
   --print(room_name)
   --update ecs
-  local room = self.manager:push(roomManager.storage.room_list[room_name])
-  
+ -- local room = self.manager:push(roomManager.storage.room_list[room_name])
+  self.manager:push(roomManager.storage.room_list[room_name])
 
 end;
 
@@ -51,11 +51,12 @@ roomManager.emit = function(self,event,...)
 end;
 
 roomManager.pop = function (self)
-  self.current_room = room_name
+   -- local room = self.manager:pop()
+  --self.current_room = room_name
   
   --update ecs
-  local room = self.manager:pop()
   
+    self.manager:pop()
 
 end;
 
@@ -65,7 +66,8 @@ end;
 
 roomManager.getCurrentRoom = function (self)
   --  error(roomManager.current_room)
-  return roomManager.storage.room_list[roomManager.current_room]
+ -- print(111,roomManager.current_room)
+  return roomManager.storage.room_list[roomManager.current_room] 
 end;
 
 --roomManager.storage:Load()
