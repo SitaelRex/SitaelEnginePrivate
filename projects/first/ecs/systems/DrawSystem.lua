@@ -41,7 +41,8 @@ end
 local function render(e,objects_count)
   --финальные координаты с учетом основной позиции, и позиции камеры
     local AbsolutePosition = e:GetAbsolute("position")
-    local final_cords = { x =  AbsolutePosition.x - current_camera.position.x ; y = AbsolutePosition.y - current_camera.position.y}
+ --   local final_cords = { x =  AbsolutePosition.x - current_camera.position.x ; y = AbsolutePosition.y - current_camera.position.y}
+     local final_cords = { x =  AbsolutePosition.x +500; y = AbsolutePosition.y+400}
    -- local final_cords = { x =  e.position.x - current_camera.position.x ; y = e.position.y - current_camera.position.y}
   --финальные координаты с учетом якоря
   local anchored_final_cords = { x =  final_cords.x - e.anchors.offset.x ; y = final_cords.y - e.anchors.offset.y} 

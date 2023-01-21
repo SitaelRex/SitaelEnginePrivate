@@ -30,7 +30,8 @@ SaveResume = function()
 end;
 
 loader.Start = function(self) --нужно разобраться как менять целевой проект
-    love.filesystem.setIdentity(projectName)
+    love.filesystem.setIdentity(projectName,false)
+    print(11111)
 end;
 
 loader.TryLoadCommon = function(self) --попробовать оъединить в одну функцию  TryLoadCommon TryLoadSave
@@ -70,8 +71,10 @@ loader.GetSaveMode = function(self) --инфа
 end;
 
 local function recursivelyDelete( item ) --вылет, если находишься в удаляемой папке во время удаления
+    print(item)
     if love.filesystem.getInfo( item , "directory" ) then
         for _, child in ipairs( love.filesystem.getDirectoryItems( item )) do
+            
             recursivelyDelete( item .. '/' .. child )
             love.filesystem.remove( item .. '/' .. child )
         end
@@ -79,6 +82,7 @@ local function recursivelyDelete( item ) --вылет, если находишь
         love.filesystem.remove( item )
     end
     love.filesystem.remove( item )
+  --  print(111)
 end
 
 loader.KillSaveFiles = function(self,...)
@@ -86,7 +90,9 @@ loader.KillSaveFiles = function(self,...)
     local targetList
     
     if #argList == 0 then --DeleteAll
-        targetList = love.filesystem.getDirectoryItems("save/")
+        targetList = love.filesystem.getDirectoryItems("save")--"save/"
+        
+        print(#targetList)
     else --DeleteFilesFromList
         targetList = argList
     end;
@@ -131,15 +137,15 @@ local config = {
 }
 config.icon_inner_max_radius = config.icon_outer_radius-config.icon_line_width/2
 
---loader.Draw = function() --save/load icon
---    if loader.HasActiveSaveProcess() then
---        love.graphics.setLineWidth(config.icon_line_width)
---        love.graphics.circle("line",750,550,config.icon_outer_radius)
---        love.graphics.setLineWidth(1)
---        love.graphics.circle("fill",750,550,config.icon_inner_max_radius/100 * (100 - loader.GetSaveProgress () ) )
---    end;
---    
---    love.graphics.print("SaveProcessQueueLen: "..saveQueue.list.size, 0,100)
---end;
+loader.draw = function() --save/load icon
+    if loader.HasActiveSaveProcess() then
+        love.graphics.setLineWidth(config.icon_line_width)
+        love.graphics.circle("line",750,550,config.icon_outer_radius)
+        love.graphics.setLineWidth(1)
+        love.graphics.circle("fill",750,550,config.icon_inner_max_radius/100 * (100 - loader.GetSaveProgress () ) )
+    end;
+    
+    love.graphics.print("SaveProcessQueueLen: "..saveQueue.list.size, 0,100)
+end;
 
 return loader;

@@ -92,6 +92,7 @@ ProjectCore.Update =  Pipeline()
     ProjectCore.Draw = Pipeline()
     local FuncDrawRoom = function()
         room:emit("draw")
+        loader:draw()
     end;
     
      ProjectCore.Draw:Insert(FuncDrawRoom,"draw")
@@ -99,8 +100,9 @@ ProjectCore.Update =  Pipeline()
 --
 --    -------------------начало load
 --    
-   -- loader:KillSaveFiles()
+   
     loader:Start()
+    loader:KillSaveFiles()
     room.storage:Load()
     room:enter("extra") --комната по-умолчанию
     room:emit("load")
