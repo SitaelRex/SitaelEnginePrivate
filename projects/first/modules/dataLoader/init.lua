@@ -29,9 +29,8 @@ SaveResume = function()
     saveQueue:Continue()
 end;
 
-loader.Start = function(self) --нужно разобраться как менять целевой проект
+loader.Start = function(self)
     love.filesystem.setIdentity(projectName,false)
-    print(11111)
 end;
 
 loader.TryLoadCommon = function(self) --попробовать оъединить в одну функцию  TryLoadCommon TryLoadSave
