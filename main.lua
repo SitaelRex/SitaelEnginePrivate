@@ -158,6 +158,7 @@ local function OpenProject(projectName)
 end
 
 local aa = true
+local sdw = false -- showDemoWindow
 
 local pselect = pselect or {}
  local selected = 1
@@ -212,7 +213,29 @@ local function OpenFileManger()
     end
 end;
 
+ canvas = love.graphics.newCanvas(800, 600)
+ 
+ 
+ local docks = {
+        {name = "Hierarchy", dock = "ImGuiDockSlot_Right", view = true},
+        {name = "FileManager", dock = "ImGuiDockSlot_Right" , view = true},
+        {name = "Viewport", dock = "ImGuiDockSlot_Top", view = true},
+        {name = "Inspector", dock = "ImGuiDockSlot_Right", view = true},
+    }
+    
+
 function love.draw() --Тут происходит заметная просадка FPS
+    
+     if ProjectCore.Draw then
+        love.graphics.setCanvas(canvas)
+        love.graphics.clear(0.4, 0.4, 0.4, 0.4)
+        ProjectCore.Draw:Do()
+        love.graphics.setCanvas()
+    else
+        love.graphics.setCanvas(canvas)
+        love.graphics.clear(0.4, 0.4, 0.4, 0.4)
+        love.graphics.setCanvas()
+    end
 
 
     -- drawTime = (love.timer.getTime()- startTime - updateTime  ) 
@@ -243,6 +266,10 @@ function love.draw() --Тут происходит заметная просад
   --     imgui.End();
   -- end
   -- love.graphics.clear(clearColor[1], clearColor[2], clearColor[3])
+  
+    
+    
+    
     if imgui.BeginMainMenuBar() then
         if imgui.BeginMenu("Engine") then
             imgui.EndMenu()
@@ -256,34 +283,102 @@ function love.draw() --Тут происходит заметная просад
             
            
             
-            if imgui.MenuItem("Close") then
-                ProjectCore:Destroy() --= nil
+            if imgui.MenuItem("Close", nil,false,true) then --label,  shortcut, bool selected, bool enabled
+              -- ProjectCore:Destroy() --= nil
               --  collectgarbage()
-               ProjectCore = Core()
+               ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.projectPath)
             end;
+
             
             
             imgui.EndMenu()
         end
         
-        local a,b,c,d = imgui.BeginMenu("Текст на Русском, Охуеть")
-        if a then  imgui.EndMenu() end
+       -- local a,b,c,d = imgui.BeginMenu("Текст на Русском, Охуеть")
+       -- if a then  imgui.EndMenu() end
         
         if imgui.BeginMenu("Settings") then
+            
+            
+                
+          --  end;
+            
             imgui.EndMenu()
         end;
+        
+        if imgui.BeginMenu("View") then
+            for k,v in pairs(docks) do
+               -- if imgui.MenuItem(v.name) then
+                if imgui.MenuItem(v.name) then
+                     v.view = not v.view
+                end;
+                
+                imgui.SameLine() 
+                imgui.Checkbox("", v.view) 
+                   
+           
+                
+            end;
+            
+            imgui.EndMenu()
+        end;
+        
+        if imgui.Checkbox("Show Demo",sdw) then
+            sdw = not sdw
+        end;
+        
         --print(a,b,c,d)
         imgui.EndMainMenuBar()
 
     end
 
-OpenFileManger()
-     showTestWindow = imgui.ShowDemoWindow(true)
+    OpenFileManger()
+    if sdw then
+        showTestWindow = imgui.ShowDemoWindow(false)
+    end
+  --   showTestWindow = imgui.ShowDemoWindow(false)
+    IMAGE = canvas
+    
+    imgui.SetNextWindowPos(0, 10)
+    imgui.SetNextWindowSize(love.graphics.getWidth(), love.graphics.getHeight()-10)
+    
+    --local docks = {Hierarchy = "ImGuiDockSlot_Right" , FileManager = "ImGuiDockSlot_Top", Viewport = "ImGuiDockSlot_Right" ,Inspector = "ImGuiDockSlot_Right" }
+    
+  
+  
+     if imgui.Begin("DockArea", nil, { "ImGuiWindowFlags_NoTitleBar", "ImGuiWindowFlags_NoResize", "ImGuiWindowFlags_NoMove", "ImGuiWindowFlags_NoBringToFrontOnFocus" }) then
+        imgui.BeginDockspace()
+
+        -- Create 10 docks
+        for k,v in pairs (docks) do
+           -- imgui.SetNextDockFloatingSize(v.splitRatio.x or 0.1,v.splitRatio.y or 0.1 )
+            
+            if v.view then
+                imgui.SetNextDock(v.dock);
+                if imgui.BeginDock(v.name,true) then
+                    
+                -- imgui.Text("Hello, dock "..i.."!");
+                    if v.name == "Viewport" then
+                       -- love.graphics.clear(0.4, 0.4, 0.4, 0.4)
+                        imgui.Image(IMAGE, 800, 600)
+                    end
+                
+                --imgui.SetNextDockFloatingSize(0.3,0.3)
+                    -- imgui.SetNextDockSplitRatio(0.1,0.4)
+                end
+            -- imgui.SetWindowSize(v.name,100,100)
+                imgui.EndDock()
+            end
+        end
+
+        imgui.EndDockspace()
+    end
+    imgui.End()
+    
+     -- imgui.DockDebugWindow();
     imgui.Render();
    
-    if ProjectCore.Draw then
-        ProjectCore.Draw:Do()
-    end
+   
     
 end;
 
