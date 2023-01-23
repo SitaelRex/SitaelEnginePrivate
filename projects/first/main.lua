@@ -1,6 +1,6 @@
 
 ProjectCore = nil
-ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.projectPath) 
+ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.GetProjectPath()) 
 setmetatable(_G, {__index = function(_,key)  return ProjectCore:IndexInterface(key) end })
 ProjectCore:LoadModules() 
 -------------------------- auto generate
@@ -98,8 +98,10 @@ end;
 
 ProjectCore.Draw:Insert(FuncDrawRoom,"draw")
 ------------------начало load
+
+--pathManager.SetProject("first")
 loader:Start()
-loader:KillSaveFiles()
+--loader:KillSaveFiles()
 room.storage:Load()
 room:enter("extra") --комната по-умолчанию
 room:emit("load")

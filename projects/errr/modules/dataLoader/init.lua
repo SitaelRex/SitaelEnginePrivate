@@ -13,6 +13,7 @@ V 2. сохранять common данные логически отдельно 
 
 include("engineEvent")
 include("utils")
+include("pathManager")
 
 local libPath = (...):gsub('%.init$', '');
 local persistence   = require (libPath..'.persistence' );
@@ -29,9 +30,11 @@ SaveResume = function()
     saveQueue:Continue()
 end;
 
-loader.Start = function(self) --нужно разобраться как менять целевой проект
+loader.Start = function(self)
+    local projectName = pathManager.GetProjectName()
+    print(12,pathManager)
+   -- print(1111,projectName)
     love.filesystem.setIdentity(projectName,false)
-    print(11111)
 end;
 
 loader.TryLoadCommon = function(self) --попробовать оъединить в одну функцию  TryLoadCommon TryLoadSave
@@ -42,12 +45,14 @@ end;
 loader.TryLoadSave = function(self,roomName) 
     -- пытается вернуть сейв комнаты
     if not loader.HasActiveSaveProcess() then
+      --  print("1222"..love.filesystem.getIdentity())
         local data,e = persistence.load("save/room_"..roomName.."_save.lua") --AppData
         local has_correct_saved_data = type(data) == "table"
         if has_correct_saved_data then 
             engineEvent:EmitOnce("OnLoadEnd")
             return data--true
         else
+          --  print("blyat")
             return false
         end
     end

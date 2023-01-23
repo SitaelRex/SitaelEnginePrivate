@@ -1,23 +1,23 @@
 
 ProjectCore = nil
-ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.projectPath) 
+ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.GetProjectPath()) 
 setmetatable(_G, {__index = function(_,key)  return ProjectCore:IndexInterface(key) end })
 ProjectCore:LoadModules() 
-
+-------------------------- auto generate
 local r =   ProjectCore:AddInterface("room")
 local i =   ProjectCore:AddInterface("input")
 local l =   ProjectCore:AddInterface("loader")
 local s =   ProjectCore:AddInterface("scripts")
 local la =  ProjectCore:AddInterface("layers")
 local ca =  ProjectCore:AddInterface("camera")
-
+---------------------------interfaces
 Interface.Connect(la,ProjectCore:IndexModule("layers"))
 Interface.Connect(r,ProjectCore:IndexModule("roomManager"))
 Interface.Connect(i,ProjectCore:IndexModule("input"))
 Interface.Connect(l,ProjectCore:IndexModule("dataLoader"))
 Interface.Connect(s,ProjectCore:IndexModule("scripts"))
 Interface.Connect(ca,ProjectCore:IndexModule("camera"))
- 
+ -------connects
 setmetatable(_G, {
     __index = function(_,key) 
         local sourceInfo =  debug.getinfo(2,"S").source 
@@ -35,8 +35,8 @@ setmetatable(_G, {
         end 
     end 
 }) 
---
-ProjectCore.Update =  Pipeline()
+-----------------------------auto generate
+ProjectCore.Update =  Pipeline() --IN GUI
 --    
 local FuncUpdateInput = function()
     local curRoom = room:getCurrentRoom()
@@ -75,6 +75,11 @@ ProjectCore.Update:Insert(FuncUpdateInput,"inputUpdate")
 ProjectCore.Update:Insert(FuncUpdateSaving,"saveUpdate")
 ProjectCore.Update:Insert(FuncUpdateRoom,"systemsUpdate")
 
+
+
+
+
+-------------------------------------------НАЙТИ НОРМАЛЬНЫЙ ПУТЬ
 SetEntityType = function(entity_name,params) --используется в hierarchy
     local room = ProjectCore.modules.roomManager
     local currentRoom = room:getCurrentRoom()
@@ -93,8 +98,10 @@ end;
 
 ProjectCore.Draw:Insert(FuncDrawRoom,"draw")
 ------------------начало load
+
+--pathManager.SetProject("first")
 loader:Start()
-loader:KillSaveFiles()
+--loader:KillSaveFiles()
 room.storage:Load()
 room:enter("options") --комната по-умолчанию
 room:emit("load")

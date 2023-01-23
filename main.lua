@@ -143,10 +143,15 @@ local function SetFileManagerOpen(status)
 end
 
 local function OpenProject(projectName)
-    pathManager.SetProject(projectName)
+  --  print(22,projectName)
+    pathManager.SetProject(projectName) -- 1/2    2 in project main
+  --  loader:Start()
+  --  print(111,
     local fullPath = pathManager.GetProjectPath()
    -- local fullPath = "projects/"..projectName
-    local setupPath = fullPath.."/main.lua"
+    local setupPath = fullPath.."main.lua"
+    
+  --  print(111,projectName,fullPath,setupPath)
     local  chunk, errormsg = love.filesystem.load( setupPath )
     
     
