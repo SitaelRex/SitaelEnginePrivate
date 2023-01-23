@@ -1,8 +1,6 @@
 --local roomManager = room -- _G.room
 local room = {}
-
 room.ecs = ecs
-print(11,ecs)
 --local utils = EngineCore.modules.utils
 
 room.world = utils.DeepCopy(ecs.defaultWorld)
@@ -65,7 +63,7 @@ room.new = function(self,path,name)
     roomInstance = room.hierarchy:Setup(roomInstance)  
     --здесь должен создаваться ecs объект для комнаты
   --  utils.ExpandMetatable(roomInstance,roomMt)
-   roomInstance.ecs = ecs
+  
   roomInstance.world = room.world
   roomInstance.hierarchy = room.hierarchy
   roomInstance.SpawnEntity  =   room.SpawnEntity 

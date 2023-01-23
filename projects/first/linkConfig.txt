@@ -1,8 +1,0 @@
---interfaceName{interface_conf}moduleName.
-ecs{}concord.
-layers{ }layers.
-room{ }roomManager.
-input{ }input.
-loader{ }dataLoader.
-scripts{ }scripts.
-camera{ }camera.

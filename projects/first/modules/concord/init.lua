@@ -108,7 +108,7 @@ Concord.GetSpriteType = function(e) --бардак
   return e.drawable.sprite_type;
 end;
 
-local ecs = require(PATH..".setup")(Concord)
+_G.ecs = require(PATH..".setup")(Concord)
 
 
 

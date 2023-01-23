@@ -8,27 +8,14 @@ saveProcess.__mt = {
 }
 
 function saveProcess:Continue()
-   
-    local info = love.thread.getChannel( 'persistenceInfo' ):pop()
-    if info then
-       local threadIsDead = info >= 100
-        self.progress = info
-   --  print(11,self.progress)
-        return threadIsDead
-     
+    local ok,progress = coroutine.resume( self.coroutine ,self.path ,self.data)
+    if ok then
+        self.progress = progress
+        local coroutineIsDead = progress >= 100
+        return coroutineIsDead
     else
-      --  print(42)
-        -- self.thread:start( libPath,self.path ,self.data )
-         return false
+        error("saveProvess.lua "..progress)
     end
-    --local ok,progress = coroutine.resume( self.coroutine ,self.path ,self.data)
-    --if ok then
-    --    self.progress = progress
-    --    local coroutineIsDead = progress >= 100
-    --    return coroutineIsDead
-    --else
-    --    error("saveProvess.lua "..progress)
-    --end
 end;
 
 NewSaveProcess = function(_,owner,data,save_path,mode)
@@ -40,16 +27,13 @@ NewSaveProcess = function(_,owner,data,save_path,mode)
     process.progress = 0
    -- print()
     
-    local threadCode = [[
-        libPath,savePath,data=  ... 
-        persistence = require (libPath..'.persistence' );
-       
-        persistence.store(savePath,data);
-    ]]
-    process.thread = love.thread.newThread( threadCode )
-    process.thread:start( libPath,save_path,data )
- --   thread:start( path,data)
-   -- process.coroutine = coroutine.create(persistence.store)
+    --local threadCode = [[
+    --    path,data =  ... 
+    --  --  persistence.store(path,data)
+    --]]
+    --local thread = love.thread.newThread( threadCode )
+    --thread:start( path,data)
+    process.coroutine = coroutine.create(persistence.store)
     return setmetatable(process, saveProcess.__mt)
 end;
 
