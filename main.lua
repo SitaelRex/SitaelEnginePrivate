@@ -9,15 +9,6 @@ imgui.SetReturnValueLast(false)
 --local clearColor = { 0.2, 0.2, 0.2 }
 --local comboSelection = 1
 --local textValue = "text"
-
-SetEntityType = function(entity_name,params) --используется в hierarchy
-    --local room = ProjectCore.modules.roomManager
-    local currentRoom = room:getCurrentRoom()
-    local result = currentRoom.hierarchy.SetEntityType(entity_name,params)
-    -- print("set entity type",entity_name,params)
-    return result
-end
-
 ----------------------------
 ---------------------------------------------------------------Global Engine Utils
 function string:cut(reference) --сокращенный вырезатель gsub
@@ -26,7 +17,7 @@ end;
 
 included = {}
 
-function include(mod,addLayer) -- для связи между модулями
+function include(mod) -- для связи между модулями
     local _,name = debug.getlocal(4,3)
     print("module ",name," include inreface ",mod)
     included[name] = included[name] or {}
@@ -71,7 +62,7 @@ function love.load()
    ]]
 
    
-    ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.projectPath) -- создаем  ядро проекта (должно подгружаться из проекта)
+    ProjectCore = Core() -- создаем  ядро проекта (должно подгружаться из проекта)
 -----    
 -----    setmetatable(_G, {__index = function(_,key)  return ProjectCore:IndexInterface(key) end }) -- настраиваем индекс, чтобы модули проекта могли обращатсья к модулям движка во время require (правильно ли это?)
 -----   -- print("utils",utils)
@@ -93,23 +84,22 @@ function love.load()
 -----    Interface.Connect(s,ProjectCore:IndexModule("scripts"))
 -----    Interface.Connect(ca,ProjectCore:IndexModule("camera"))
 -----    
-    setmetatable(_G, {__index = function(_,key) 
-                local core = ProjectCore
-        local sourceInfo =  debug.getinfo(2,"S").source 
-        local sourceModule,a = sourceInfo:find("modules/") 
-        if not sourceModule  then  
-           -- if 
-            return core:IndexInterface(key) --указываем самое высокоуровневое ядро, через которое будет начинаться поиск
-        else 
-            local sourceInfo = sourceInfo:sub(a+1) 
-            sourceInfo = sourceInfo:sub(0,sourceInfo:find("/")-1 ) 
-            if sourceInfo == key or ( included[sourceInfo] and included[sourceInfo][key]  ) then
-                return core:IndexInterface(key) 
-            end;
-          --  print(sourceInfo)
-        end 
-    end 
-    }) 
+-----    setmetatable(_G, {__index = function(_,key) 
+-----        local sourceInfo =  debug.getinfo(2,"S").source 
+-----        local sourceModule,a = sourceInfo:find("modules/") 
+-----        if not sourceModule  then  
+-----           -- if 
+-----            return ProjectCore:IndexInterface(key) --указываем самое высокоуровневое ядро, через которое будет начинаться поиск
+-----        else 
+-----            local sourceInfo = sourceInfo:sub(a+1) 
+-----            sourceInfo = sourceInfo:sub(0,sourceInfo:find("/")-1 ) 
+-----            if sourceInfo == key or ( included[sourceInfo] and included[sourceInfo][key]  ) then
+-----                return ProjectCore:IndexInterface(key) 
+-----            end;
+-----          --  print(sourceInfo)
+-----        end 
+-----    end 
+-----    }) 
 -----   -- setmetatable(_G,{index = function(...) print(...,_G) end})
 -----    -- можно сделать хранилище ядер
 -----    -- при создании ядра хранить его в определнном слое таблицы с ядрами
@@ -119,6 +109,71 @@ function love.load()
 ----- 
 -----    ------setup update pipeline
     Pipeline = EngineCore.modules.Pipeline
+
+-----    ProjectCore.Update =  Pipeline()
+-----    
+-----    local FuncUpdateInput = function()
+-----        local curRoom = room:getCurrentRoom()
+-----        input:update()
+-----        if not input:Blocked() then
+-----            if input:pressed("room1") then room:GoTo("extra")end
+-----            if input:pressed("room2") then room:GoTo("main_menu") end
+-----            if input:pressed("room3") then room:GoTo("options") end
+-----            if input:pressed("save") then curRoom:StartSave(false) end--loader:SaveDataInProgress(curRoom) end
+-----            if input:pressed("spawn") then  Spawn("sphere",{velocity = {velocity_x = 10,velocity_y = 100} }) end
+-----            if input:pressed("despawn") then  Despawn(  room:getCurrentRoom():GetFirstEntityByID("sphere") or room:getCurrentRoom():GetFirstEntityByID("sphere2") or room:getCurrentRoom():GetFirstEntityByID("sphere3")  ) end --нужно добавить хранение объектов по типу, а не только по имени 
+-----        end;
+-----    end
+-----    
+-----    local FuncUpdateSaving = function()
+-----        local loaderStatus, isBlockingSave = loader:Update(curRoom)
+-----        if loaderStatus == true then
+-----            if curRoom.name ~= "saving" and isBlockingSave then 
+-----                room:push("saving")
+-----            end
+-----        else
+-----            local curRoom = room:getCurrentRoom() 
+-----            if curRoom.name == "saving"  then -- покидаем сейв экран
+-----                room:pop(false)
+-----            end;
+-----        end;
+-----    end;
+-----    
+-----    local FuncUpdateRoom = function()
+-----        local dt = love.timer.getDelta( )
+-----        room:emit("update",dt)
+-----    end
+-----    
+-----    
+-----    ProjectCore.Update:Insert(FuncUpdateInput,"inputUpdate")
+-----    ProjectCore.Update:Insert(FuncUpdateSaving,"saveUpdate")
+-----    ProjectCore.Update:Insert(FuncUpdateRoom,"systemsUpdate")
+-----  
+-----    SetEntityType = function(entity_name,params) --используется в hierarchy
+-----        local room = ProjectCore.modules.roomManager
+-----        local currentRoom = room:getCurrentRoom()
+-----        local result = currentRoom.hierarchy.SetEntityType(entity_name,params)
+-----        -- print("set entity type",entity_name,params)
+-----        return result
+-----    end
+-----    
+-----    --------setup draw pipeline
+-----    
+-----    ProjectCore.Draw = Pipeline()
+-----    local FuncDrawRoom = function()
+-----        room:emit("draw")
+-----    end;
+-----    
+-----     ProjectCore.Draw:Insert(FuncDrawRoom,"draw")
+-----    
+-----
+-----    -------------------начало load
+-----    
+-----    loader:KillSaveFiles()
+-----    loader:Start()
+-----    room.storage:Load()
+-----    room:enter("extra") --комната по-умолчанию
+-----    room:emit("load")
    
 end;
 
@@ -151,173 +206,55 @@ local function SetFileManagerOpen(status)
     openManager = status
 end
 
-local function LinkCore(Core) -- генерирует интерфейсы и их связи из linkConfig.txt
-    local projectPath = pathManager.GetProjectPath() --хрнаить путь к проекту в ядре
-    local linkConfigPath = projectPath.."linkConfig.txt"
-    local interfacesConnect = {}
-    
-    local function isComment(line)
-        local startLine = line:sub(0,2)
-        --print(startLine)
-        return startLine == "--"
-    end;
-    
-    local function CreateInterface(line)
-        local interfaceName = line:sub(0, line:find("{")-1 )
-        --print(111,interfaceName)
-        interfacesConnect[interfaceName] =   Core:AddInterface(interfaceName)
-    end;
-
-    local function ConfigInterface(line)
-        --создание заглушечных функций интерфейсов внутри скобок
-    end;
-
-    local function LinkModule(line)
-        local interfaceName = line:sub(0, line:find("{")-1 )
-        local moduleName = line:sub(line:find("}")+1,-2 ) -- -2 because line has "." in the end
-       -- print(moduleName)
-        Interface.Connect(interfacesConnect[interfaceName],Core:IndexModule(moduleName))
-    end;
-
-    
-    for line in love.filesystem.lines(linkConfigPath) do
-        
-        if not isComment(line) then
-            CreateInterface(line)
-            --ConfigInterface(line)
-            LinkModule(line)
-        end
-        --table.insert(highscores, tonumber(line))
-    end
-    interfacesConnect = nil
-end;
-
 local function OpenProject(projectName)
-  --  print(22,projectName)
-    pathManager.SetProject(projectName) -- 1/2    2 in project main
-  --  loader:Start()
-  --  print(111,
-    local fullPath = pathManager.GetProjectPath()
-   -- local fullPath = "projects/"..projectName
-    local setupPath = fullPath.."main.lua"
-    
-  --  print(111,projectName,fullPath,setupPath)
+    local fullPath = "projects/"..projectName
+    local setupPath = fullPath.."/setup.lua"
     local  chunk, errormsg = love.filesystem.load( setupPath )
-    
-    
     if not errormsg then
-        -- вынесено из main скрипта проекта
-        ProjectCore = nil
-        ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.GetProjectPath()) 
-        setmetatable(_G, {__index = function(_,key)  return ProjectCore:IndexInterface(key) end })
-        ProjectCore:LoadModules() 
-        --
-        LinkCore(ProjectCore)
-        --
-        setmetatable(_G, {
-            __index = function(_,key) 
-            local sourceInfo =  debug.getinfo(2,"S").source 
-            local sourceModule,a = sourceInfo:find("modules/") 
-            if not sourceModule  then  
-                -- if 
-                return ProjectCore:IndexInterface(key) --указываем самое высокоуровневое ядро, через которое будет начинаться поиск
-            else 
-                local sourceInfo = sourceInfo:sub(a+1) 
-                sourceInfo = sourceInfo:sub(0,sourceInfo:find("/")-1 ) 
-                if sourceInfo == key or ( included[sourceInfo] and included[sourceInfo][key]  ) then
-                    return ProjectCore:IndexInterface(key) 
-                end;
-            --  print(sourceInfo)
-            end 
-        end 
-        }) 
-        --
-        chunk() -- содержимое main файла проекта
+        chunk()
     else
         error(errormsg)
     end
 end
 
 local aa = true
-local sdw = false -- showDemoWindow
-
-local pselect = pselect or {}
- local selected = 1
 local function OpenFileManger()
    -- openManager = true
     if openManager then
-        imgui.OpenPopup("ProjectSelect")
-        if imgui.BeginPopupModal("ProjectSelect",nil,{ "ImGuiWindowFlags_NoResize", "ImGuiWindowFlags_NoClose"}) then
-            
-            imgui.Text("выбери проект")
-               -- print(111)
-            imgui.Separator();
-            local projectsList =love.filesystem.getDirectoryItems( "projects" )
+        if imgui.Begin("File Manager", false,{ "ImGuiWindowFlags_NoResize"},200,200) then
+            local files = love.filesystem.getDirectoryItems( "projects" )
+         --   local check = {}
+            for k,v in pairs(files) do
+                --local check = {}
+                if imgui.Checkbox(v,aa) then
+                   -- for k,vv in pairs(files)
+                    aa = not aa
+                end;
+                
+               -- if imgui.BeginMenu(v) then
+               --     imgui.SetWindowSize(v,200,200)
+               --     imgui.EndMenu()
+               -- end
+            end;
+           if imgui.Button("Open") then
+                if aa then
+                    OpenProject("first")
+                end
+           end;
            
-            local _
-            _,selected = imgui.ListBox("",selected,projectsList,#projectsList,4)--,1,love.filesystem.getDirectoryItems( "projects" ),3)
-
-            imgui.Separator();
-            if imgui.Button("cancel",80,0) then openManager = false; imgui.CloseCurrentPopup() end
-            imgui.SameLine()
-            if imgui.Button("open",80,0) then openManager = false; imgui.CloseCurrentPopup(); OpenProject(projectsList[selected]) end
-            imgui.EndPopup();
-            
-            imgui.SetWindowSize("ProjectSelect",200,200)
+           -- imgui.Text("Hello, world!")
+           -- imgui.Text("Hello, world!")
+            imgui.End();
         end
         
-      --  local fileManagerInit,closeWindow =  imgui.Begin("File Manager", true,{ "ImGuiWindowFlags_NoResize"},200,200) 
-       -- closeWindow = not closeWindow
-       -- if  fileManagerInit  and openManager then
-       --     if  closeWindow == false then
-       --         local files = love.filesystem.getDirectoryItems( "projects" )
-       --         for k,v in pairs(files) do
-       --             if imgui.Checkbox(v,aa) then
-       --                 aa = not aa
-       --             end;
-       --         
-       --         end;
-       --         if imgui.Button("Open") then
-       --             if aa then
-       --                 OpenProject("first")
-       --                 SetFileManagerOpen(false)
-       --             end
-       --         end;
-       --     else
-       --         SetFileManagerOpen(false)
-       --     end
-       --    
-       --     imgui.End();
-       -- end
-       -- 
-       -- imgui.SetWindowSize("File Manager",200,200)
+        imgui.SetWindowSize("File Manager",200,200)
     end
 end;
 
- canvas = love.graphics.newCanvas(800, 600)
- 
- 
- local docks = {
-        {name = "Hierarchy", dock = "ImGuiDockSlot_Right", view = true},
-        {name = "FileManager", dock = "ImGuiDockSlot_Right" , view = true},
-        {name = "Viewport", dock = "ImGuiDockSlot_Top", view = true},
-        {name = "Inspector", dock = "ImGuiDockSlot_Right", view = true},
-    }
-    
-
 function love.draw() --Тут происходит заметная просадка FPS
+    --love.graphics.setFont(font)
+   
     
-     if ProjectCore.Draw then
-        love.graphics.setCanvas(canvas)
-        love.graphics.clear(0.4, 0.4, 0.4, 0.4)
-        ProjectCore.Draw:Do()
-        love.graphics.setCanvas()
-    else
-        love.graphics.setCanvas(canvas)
-        love.graphics.clear(0.4, 0.4, 0.4, 0.4)
-        love.graphics.setCanvas()
-    end
-
 
     -- drawTime = (love.timer.getTime()- startTime - updateTime  ) 
     -- local totalFrameTime = ( drawTime+updateTime ) 
@@ -347,10 +284,6 @@ function love.draw() --Тут происходит заметная просад
   --     imgui.End();
   -- end
   -- love.graphics.clear(clearColor[1], clearColor[2], clearColor[3])
-  
-    
-    
-    
     if imgui.BeginMainMenuBar() then
         if imgui.BeginMenu("Engine") then
             imgui.EndMenu()
@@ -358,108 +291,37 @@ function love.draw() --Тут происходит заметная просад
         if imgui.BeginMenu("Project") then
             imgui.MenuItem("New")
             if imgui.MenuItem("Open") then
-                
                 SetFileManagerOpen(true)
             end;
             
-           
-            
-            if imgui.MenuItem("Close", nil,false,true) then --label,  shortcut, bool selected, bool enabled
-              -- ProjectCore:Destroy() --= nil
+            if imgui.MenuItem("Close") then
+                ProjectCore:Destroy() --= nil
               --  collectgarbage()
-               ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.projectPath)
+               ProjectCore = Core()
             end;
-
             
             
             imgui.EndMenu()
         end
         
-       -- local a,b,c,d = imgui.BeginMenu("Текст на Русском, Охуеть")
-       -- if a then  imgui.EndMenu() end
+        local a,b,c,d = imgui.BeginMenu("Текст на Русском, Охуеть")
+        if a then  imgui.EndMenu() end
         
         if imgui.BeginMenu("Settings") then
-            
-            
-                
-          --  end;
-            
             imgui.EndMenu()
         end;
-        
-        if imgui.BeginMenu("View") then
-            for k,v in pairs(docks) do
-               -- if imgui.MenuItem(v.name) then
-                if imgui.MenuItem(v.name) then
-                     v.view = not v.view
-                end;
-                
-                imgui.SameLine() 
-                imgui.Checkbox("", v.view) 
-                   
-           
-                
-            end;
-            
-            imgui.EndMenu()
-        end;
-        
-        if imgui.Checkbox("Show Demo",sdw) then
-            sdw = not sdw
-        end;
-        
         --print(a,b,c,d)
         imgui.EndMainMenuBar()
 
     end
 
-    OpenFileManger()
-    if sdw then
-        showTestWindow = imgui.ShowDemoWindow(false)
-    end
-  --   showTestWindow = imgui.ShowDemoWindow(false)
-    IMAGE = canvas
-    
-    imgui.SetNextWindowPos(0, 10)
-    imgui.SetNextWindowSize(love.graphics.getWidth(), love.graphics.getHeight()-10)
-    
-    --local docks = {Hierarchy = "ImGuiDockSlot_Right" , FileManager = "ImGuiDockSlot_Top", Viewport = "ImGuiDockSlot_Right" ,Inspector = "ImGuiDockSlot_Right" }
-    
-  
-  
-     if imgui.Begin("DockArea", nil, { "ImGuiWindowFlags_NoTitleBar", "ImGuiWindowFlags_NoResize", "ImGuiWindowFlags_NoMove", "ImGuiWindowFlags_NoBringToFrontOnFocus" }) then
-        imgui.BeginDockspace()
-
-        -- Create 10 docks
-        for k,v in pairs (docks) do
-           -- imgui.SetNextDockFloatingSize(v.splitRatio.x or 0.1,v.splitRatio.y or 0.1 )
-            
-            if v.view then
-                imgui.SetNextDock(v.dock);
-                if imgui.BeginDock(v.name,true) then
-                    
-                -- imgui.Text("Hello, dock "..i.."!");
-                    if v.name == "Viewport" then
-                       -- love.graphics.clear(0.4, 0.4, 0.4, 0.4)
-                        imgui.Image(IMAGE, 800, 600)
-                    end
-                
-                --imgui.SetNextDockFloatingSize(0.3,0.3)
-                    -- imgui.SetNextDockSplitRatio(0.1,0.4)
-                end
-            -- imgui.SetWindowSize(v.name,100,100)
-                imgui.EndDock()
-            end
-        end
-
-        imgui.EndDockspace()
-    end
-    imgui.End()
-    
-     -- imgui.DockDebugWindow();
+OpenFileManger()
+     --showTestWindow = imgui.ShowDemoWindow(true)
     imgui.Render();
    
-   
+    if ProjectCore.Draw then
+        ProjectCore.Draw:Do()
+    end
     
 end;
 

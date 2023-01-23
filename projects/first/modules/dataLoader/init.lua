@@ -13,8 +13,6 @@ V 2. сохранять common данные логически отдельно 
 
 include("engineEvent")
 include("utils")
-include("pathManager")
-
 
 local libPath = (...):gsub('%.init$', '');
 local persistence   = require (libPath..'.persistence' );
@@ -31,11 +29,8 @@ SaveResume = function()
     saveQueue:Continue()
 end;
 
-loader.Start = function(self)
-    local projectName = pathManager.GetProjectName()
-    print(12,pathManager)
-   -- print(1111,projectName)
-    love.filesystem.setIdentity(projectName,false)
+loader.Start = function(self) --нужно разобраться как менять целевой проект
+    love.filesystem.setIdentity(projectName)
 end;
 
 loader.TryLoadCommon = function(self) --попробовать оъединить в одну функцию  TryLoadCommon TryLoadSave
@@ -46,14 +41,12 @@ end;
 loader.TryLoadSave = function(self,roomName) 
     -- пытается вернуть сейв комнаты
     if not loader.HasActiveSaveProcess() then
-      --  print("1222"..love.filesystem.getIdentity())
         local data,e = persistence.load("save/room_"..roomName.."_save.lua") --AppData
         local has_correct_saved_data = type(data) == "table"
         if has_correct_saved_data then 
             engineEvent:EmitOnce("OnLoadEnd")
             return data--true
         else
-          --  print("blyat")
             return false
         end
     end
@@ -77,10 +70,8 @@ loader.GetSaveMode = function(self) --инфа
 end;
 
 local function recursivelyDelete( item ) --вылет, если находишься в удаляемой папке во время удаления
-    print(item)
     if love.filesystem.getInfo( item , "directory" ) then
         for _, child in ipairs( love.filesystem.getDirectoryItems( item )) do
-            
             recursivelyDelete( item .. '/' .. child )
             love.filesystem.remove( item .. '/' .. child )
         end
@@ -88,7 +79,6 @@ local function recursivelyDelete( item ) --вылет, если находишь
         love.filesystem.remove( item )
     end
     love.filesystem.remove( item )
-  --  print(111)
 end
 
 loader.KillSaveFiles = function(self,...)
@@ -96,9 +86,7 @@ loader.KillSaveFiles = function(self,...)
     local targetList
     
     if #argList == 0 then --DeleteAll
-        targetList = love.filesystem.getDirectoryItems("save")--"save/"
-        
-        print(#targetList)
+        targetList = love.filesystem.getDirectoryItems("save/")
     else --DeleteFilesFromList
         targetList = argList
     end;
