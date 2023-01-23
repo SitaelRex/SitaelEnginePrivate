@@ -1,6 +1,7 @@
 include("utils")
 include("engineEvent")
 include("loader")
+include("ecs")
 
 local libPath = (...):gsub('%.init$', '');
 

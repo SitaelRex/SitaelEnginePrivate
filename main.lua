@@ -9,6 +9,15 @@ imgui.SetReturnValueLast(false)
 --local clearColor = { 0.2, 0.2, 0.2 }
 --local comboSelection = 1
 --local textValue = "text"
+
+SetEntityType = function(entity_name,params) --используется в hierarchy
+    --local room = ProjectCore.modules.roomManager
+    local currentRoom = room:getCurrentRoom()
+    local result = currentRoom.hierarchy.SetEntityType(entity_name,params)
+    -- print("set entity type",entity_name,params)
+    return result
+end
+
 ----------------------------
 ---------------------------------------------------------------Global Engine Utils
 function string:cut(reference) --сокращенный вырезатель gsub
@@ -17,7 +26,7 @@ end;
 
 included = {}
 
-function include(mod) -- для связи между модулями
+function include(mod,addLayer) -- для связи между модулями
     local _,name = debug.getlocal(4,3)
     print("module ",name," include inreface ",mod)
     included[name] = included[name] or {}
@@ -142,6 +151,47 @@ local function SetFileManagerOpen(status)
     openManager = status
 end
 
+local function LinkCore(Core) -- генерирует интерфейсы и их связи из linkConfig.txt
+    local projectPath = pathManager.GetProjectPath() --хрнаить путь к проекту в ядре
+    local linkConfigPath = projectPath.."linkConfig.txt"
+    local interfacesConnect = {}
+    
+    local function isComment(line)
+        local startLine = line:sub(0,2)
+        --print(startLine)
+        return startLine == "--"
+    end;
+    
+    local function CreateInterface(line)
+        local interfaceName = line:sub(0, line:find("{")-1 )
+        --print(111,interfaceName)
+        interfacesConnect[interfaceName] =   Core:AddInterface(interfaceName)
+    end;
+
+    local function ConfigInterface(line)
+        --создание заглушечных функций интерфейсов внутри скобок
+    end;
+
+    local function LinkModule(line)
+        local interfaceName = line:sub(0, line:find("{")-1 )
+        local moduleName = line:sub(line:find("}")+1,-2 ) -- -2 because line has "." in the end
+       -- print(moduleName)
+        Interface.Connect(interfacesConnect[interfaceName],Core:IndexModule(moduleName))
+    end;
+
+    
+    for line in love.filesystem.lines(linkConfigPath) do
+        
+        if not isComment(line) then
+            CreateInterface(line)
+            --ConfigInterface(line)
+            LinkModule(line)
+        end
+        --table.insert(highscores, tonumber(line))
+    end
+    interfacesConnect = nil
+end;
+
 local function OpenProject(projectName)
   --  print(22,projectName)
     pathManager.SetProject(projectName) -- 1/2    2 in project main
@@ -156,7 +206,33 @@ local function OpenProject(projectName)
     
     
     if not errormsg then
-        chunk()
+        -- вынесено из main скрипта проекта
+        ProjectCore = nil
+        ProjectCore = Core(EngineCore,EngineCore.modules.pathManager.GetProjectPath()) 
+        setmetatable(_G, {__index = function(_,key)  return ProjectCore:IndexInterface(key) end })
+        ProjectCore:LoadModules() 
+        --
+        LinkCore(ProjectCore)
+        --
+        setmetatable(_G, {
+            __index = function(_,key) 
+            local sourceInfo =  debug.getinfo(2,"S").source 
+            local sourceModule,a = sourceInfo:find("modules/") 
+            if not sourceModule  then  
+                -- if 
+                return ProjectCore:IndexInterface(key) --указываем самое высокоуровневое ядро, через которое будет начинаться поиск
+            else 
+                local sourceInfo = sourceInfo:sub(a+1) 
+                sourceInfo = sourceInfo:sub(0,sourceInfo:find("/")-1 ) 
+                if sourceInfo == key or ( included[sourceInfo] and included[sourceInfo][key]  ) then
+                    return ProjectCore:IndexInterface(key) 
+                end;
+            --  print(sourceInfo)
+            end 
+        end 
+        }) 
+        --
+        chunk() -- содержимое main файла проекта
     else
         error(errormsg)
     end

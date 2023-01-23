@@ -75,11 +75,7 @@ ProjectCore.Update:Insert(FuncUpdateInput,"inputUpdate")
 ProjectCore.Update:Insert(FuncUpdateSaving,"saveUpdate")
 ProjectCore.Update:Insert(FuncUpdateRoom,"systemsUpdate")
 
-
-
-
-
--------------------------------------------НАЙТИ НОРМАЛЬНЫЙ ПУТЬ
+-------------------------------------------перенсти функцию туда, куда положено
 SetEntityType = function(entity_name,params) --используется в hierarchy
     local room = ProjectCore.modules.roomManager
     local currentRoom = room:getCurrentRoom()
