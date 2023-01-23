@@ -34,6 +34,8 @@ function room:leave(next, ...)
 	-- destroy entities and cleanup resources
 end
 
+room.layers = layers.BuildList({[1] = "bottom",[2] = "upper"})
+
 room.font = love.graphics.newFont(pathManager.GetProjectPath().."assets/fonts/Gouranga-Pixel.ttf",40)
 room.fontd = love.graphics.newFont()
 
