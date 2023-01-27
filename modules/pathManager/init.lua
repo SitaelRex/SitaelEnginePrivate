@@ -18,7 +18,7 @@ end;
 
 pathManager.SetProject = function(projectName)
   --  print(33,projectName)
-    print(11,pathManager)
+ --   print(11,pathManager)
     pathManager.projectName = projectName
   --  pathManager.projectPath = "projects/"..projectName.."/"
 end;

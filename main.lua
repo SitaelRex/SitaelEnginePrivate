@@ -146,10 +146,21 @@ end;
 
 local font = imgui.AddFontFromFileTTF("resources/unifont.ttf",16,nil,ranges)
 local openManager = false
+local openProjectsCreator = false
+local openProjectNaming = false
 
 local function SetFileManagerOpen(status)
     openManager = status
 end
+
+local function SetProjectCreatorOpen(status)
+    openProjectsCreator = status
+end;
+
+local function SetProjectNamingOpen(status)
+    openProjectNaming = status
+end;
+
 
 local function LinkCore(Core) -- генерирует интерфейсы и их связи из linkConfig.txt
     local projectPath = pathManager.GetProjectPath() --хрнаить путь к проекту в ядре
@@ -241,18 +252,148 @@ end
 local aa = true
 local sdw = false -- showDemoWindow
 
+local function RecursiveCopy(templatePath,path,projectType)
+    local templateFiles = love.filesystem.getDirectoryItems(templatePath)
+    for _,name in pairs(templateFiles) do
+        local filename = templatePath.."/"..name
+        local info = love.filesystem.getInfo(filename)
+        if info then
+            if info.type == "file" then
+                love.filesystem.write(path.."/"..name,love.filesystem.read(templatePath.."/"..name))
+            elseif  info.type == "directory" then
+                love.filesystem.createDirectory(path.."/"..name)
+                RecursiveCopy(templatePath.."/"..name,path.."/"..name,projectType)
+            end
+        end;
+        
+        print(projectType,_,name)
+    end;
+end;
+
+local function CreateProject(projectName,projectType)
+   -- local cwd = love.filesystem.getWorkingDirectory()
+   -- print(cwd,111)
+    local oldIdentity = love.filesystem.getIdentity()
+    love.filesystem.setIdentity("Sitael",false)
+    
+    local path = "projects/"..projectName
+    local templatePath = "templates/"..projectType
+    local succes = love.filesystem.createDirectory(path)
+    
+    RecursiveCopy(templatePath,path,projectType)
+    OpenProject(projectName)
+  --  local Tpath = "templates/"..projectType
+  --  local templateFiles = love.filesystem.getDirectoryItems(Tpath)
+  --  for _,name in pairs(templateFiles) do
+  --      local filename = Tpath.."/"..name
+  --      local info = love.filesystem.getInfo(filename)
+  --      if info then
+  --          if info.type == "file" then
+  --          end
+  --      end;
+  --      
+  --    --  print(projectType,k,v)
+  --  end;
+    
+    
+   -- love.filesystem.write(path.."/main.lua","")
+   -- love.filesystem.write(path.."/linkConfig.txt","")
+   
+   
+    --print("create project ",projectName,succes,id)
+    
+    love.filesystem.setIdentity(oldIdentity,false)
+end;
+
+
+  local str = ""
+local function OpenProjectNaming(projectType)
+    if openProjectNaming then
+     -- print(11)
+        imgui.OpenPopup("ProjectNaming")
+     --   local a,b,c =  imgui.BeginPopupModal("ProjectNaming",nil,{ "ImGuiWindowFlags_NoResize"}) 
+        --print(a,b,c )
+        if  imgui.BeginPopupModal("ProjectNaming",nil,{ "ImGuiWindowFlags_NoResize"})  then
+          
+          
+            local _, textboxText =  imgui.InputText("project name", "",255)
+            str = #textboxText > 0 and textboxText or  str
+         --   print(str)
+          --  print(11,a,b,c)
+            imgui.Separator();
+            if imgui.Button("cancel",80,0) then openProjectNaming = false; imgui.CloseCurrentPopup()  end
+            imgui.SameLine()
+            if imgui.Button("open",80,0) then openProjectNaming = false; openProjectsCreator = fasle ; imgui.CloseCurrentPopup() ; CreateProject(str,projectType) end
+            imgui.EndPopup();
+            
+            imgui.SetWindowSize("ProjectNaming",200,200)
+        end;
+    end
+end
+
+local templates = love.filesystem.getDirectoryItems("templates") --перенести папку в appData --{"empty", "demo", "2DPlatformer", "AAA", "JRPG", "TurnBased", "RTS", "Clicker"} -- directory items from /templates
+local selected = ""
+
+
+
+local function OpenProjectCreator()
+    if openProjectsCreator then
+        imgui.OpenPopup("ProjectCreate")
+        local open, close = imgui.BeginPopupModal("ProjectCreate",nil,{ "ImGuiWindowFlags_NoResize"})
+        if  open and not close then
+           
+            for i = 1, #templates do
+                local templateName = templates[i]
+                local buttonCheck = imgui.Button(templateName, 200,200)
+                if buttonCheck or openProjectNaming then
+                    if buttonCheck then
+                         selected = templateName
+                    end
+                    --get name from user
+                    --copy from template and rename
+                    --open project
+                    --openManager = false; imgui.CloseCurrentPopup(); OpenProject(projectsList[selected]) 
+                --    print(templateName)
+                   
+                    SetProjectNamingOpen(true)
+                   -- OpenProjectNaming()
+                end
+                if i ~= 3 and i ~= 6 and i ~= 9 and i ~= #templates then
+                    imgui.SameLine()
+                end
+            end;
+          --  if openProjectNaming then
+                OpenProjectNaming(selected)
+          --  end
+             imgui.SetWindowSize("ProjectCreate",700,600)
+            --imgui.Separator()
+            imgui.Separator()
+            
+            if imgui.Button("cancel") then
+                openProjectsCreator = false; imgui.CloseCurrentPopup(); selected = ""
+            end
+            imgui.EndPopup();
+          
+        end
+         
+    end;
+end;
+
 local pselect = pselect or {}
- local selected = 1
+local selected = 1
 local function OpenFileManger()
    -- openManager = true
     if openManager then
+        local oldIdentity = love.filesystem.getIdentity()
+        love.filesystem.setIdentity("Sitael",false)
+    
         imgui.OpenPopup("ProjectSelect")
         if imgui.BeginPopupModal("ProjectSelect",nil,{ "ImGuiWindowFlags_NoResize", "ImGuiWindowFlags_NoClose"}) then
             
             imgui.Text("выбери проект")
                -- print(111)
             imgui.Separator();
-            local projectsList =love.filesystem.getDirectoryItems( "projects" )
+            local projectsList =love.filesystem.getDirectoryItems( "projects" ) --"projects" 
            
             local _
             _,selected = imgui.ListBox("",selected,projectsList,#projectsList,4)--,1,love.filesystem.getDirectoryItems( "projects" ),3)
@@ -265,6 +406,7 @@ local function OpenFileManger()
             
             imgui.SetWindowSize("ProjectSelect",200,200)
         end
+        love.filesystem.setIdentity(oldIdentity,false)
         
       --  local fileManagerInit,closeWindow =  imgui.Begin("File Manager", true,{ "ImGuiWindowFlags_NoResize"},200,200) 
        -- closeWindow = not closeWindow
@@ -356,7 +498,9 @@ function love.draw() --Тут происходит заметная просад
             imgui.EndMenu()
         end
         if imgui.BeginMenu("Project") then
-            imgui.MenuItem("New")
+            if imgui.MenuItem("New") then
+                SetProjectCreatorOpen(true)
+            end
             if imgui.MenuItem("Open") then
                 
                 SetFileManagerOpen(true)
@@ -414,6 +558,7 @@ function love.draw() --Тут происходит заметная просад
     end
 
     OpenFileManger()
+    OpenProjectCreator()
     if sdw then
         showTestWindow = imgui.ShowDemoWindow(false)
     end
