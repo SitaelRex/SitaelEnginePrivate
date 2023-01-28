@@ -238,9 +238,68 @@ local function draw()
     imgui.End()
     imgui.Render();
 end
-
+-----------------------------------------------------------------------------------------------------------
 local UI = {}
+
+local InterfaceUnit = {}
+
+InterfaceUnit.new = function(parent) -- parent, imgui.something, args, function
+   -- print(...)
+    local result = {}
+    result.prev = parent or nil
+    result.pool = {} -- pool of 'next' units
+    
+    local parentUnit = result.prev
+    if parentUnit then
+        parentUnit.pool[result] = result
+    end
+    
+    local resultMT = {__index = InterfaceUnit, mode = "k"}
+    
+    setmetatable(result, resultMT)
+    
+    return result
+end;
+
+InterfaceUnit.destroy = function(unit)
+    local parentUnit = unit.prev
+    if parentUnit then
+        for key,childUnit in pairs(unit.pool) do
+          --  print(childUnit,"destroy")
+            childUnit:destroy()
+        end;
+        parentUnit.pool[unit] = nil
+    end;
+end;
+
+InterfaceUnit.log = function(self)
+    local function printUnit(unit,level)
+        print(string.rep("\t",level),unit)
+        for key,unit in pairs(unit.pool) do
+            printUnit(unit,level+1)
+        end;
+    end;
+    printUnit(self,0)
+end
+
+
+local InterfaceUnitMT = {__call = function(self,...) return InterfaceUnit.new(...) end}
+
+setmetatable(InterfaceUnit, InterfaceUnitMT)
+
+UI.Source = InterfaceUnit()
+a = InterfaceUnit(UI.Source)
+b = InterfaceUnit(UI.Source)
+c = InterfaceUnit(a)
+d = InterfaceUnit(a)
+e = InterfaceUnit(c)
+
+a:destroy(a)
+
+UI.Source:log()
+
 UI.Draw = function()
     draw()
 end;
+
 return UI
