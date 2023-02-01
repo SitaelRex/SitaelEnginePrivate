@@ -178,7 +178,8 @@ local docks = {
     }
 local function draw()
     imgui.NewFrame()
-        if imgui.BeginMainMenuBar() then
+    
+    if imgui.BeginMainMenuBar() then
         if imgui.BeginMenu("Engine") then
             imgui.EndMenu()
         end
@@ -212,6 +213,11 @@ local function draw()
         end;
         imgui.EndMainMenuBar()
     end
+    
+    ---------------------------------
+ --   InterfaceUnit(UI.Source,imgui.BeginMainMenuBar,{}, function(self)  childs:Do(); imgui.EndMainMenuBar() end)
+    
+    --------------------------------
     OpenFileManger()
     OpenProjectCreator()
     if sdw then
@@ -240,18 +246,32 @@ local function draw()
 end
 -----------------------------------------------------------------------------------------------------------
 local UI = {}
+-----------------------------------------------------------------------------------------------------------
+local interfaceUnitTags = {}
 
 local InterfaceUnit = {}
 
-InterfaceUnit.new = function(parent) -- parent, imgui.something, args, function
+InterfaceUnit.new = function(parent, interfaceFunc, funcArgs, funcBody, interfaceTag) -- parent, imgui.something, args, function
    -- print(...)
     local result = {}
     result.prev = parent or nil
     result.pool = {} -- pool of 'next' units
     
+    result.interfaceFunc = interfaceFunc
+    result.funcArgs = funcArgs or {}
+    result.funcBody = funcBody or function() end;
+    result.interfaceTag = interfaceTag
+    
     local parentUnit = result.prev
     if parentUnit then
         parentUnit.pool[result] = result
+    end
+    
+    if interfaceTag then -- insert in tags storage
+        if not  interfaceUnitTags[interfaceTag] then
+            interfaceUnitTags[interfaceTag] = {}
+        end
+        interfaceUnitTags[interfaceTag][result] = true
     end
     
     local resultMT = {__index = InterfaceUnit, mode = "k"}
@@ -263,13 +283,48 @@ end;
 
 InterfaceUnit.destroy = function(unit)
     local parentUnit = unit.prev
-    if parentUnit then
+    if parentUnit then --destroy childs
         for key,childUnit in pairs(unit.pool) do
           --  print(childUnit,"destroy")
             childUnit:destroy()
         end;
         parentUnit.pool[unit] = nil
     end;
+    
+    local interfaceTag = unit.interfaceTag
+    if interfaceTag then
+        interfaceUnitTags[interfaceTag][unit] = nil
+    end
+    
+    unit = nil;
+end;
+
+local function emptyUnit()
+    return true
+end;
+
+
+InterfaceUnit.ChildsDo = function(self)
+    print(1)
+    for key,childUnit in pairs(self.pool) do
+       -- childUnit:Do()
+    end;
+end;
+
+InterfaceUnit.Do = function(self)
+    local interfaceFunc = self.interfaceFunc or emptyUnit
+    local funcArgs = self.funcArgs
+    local funcBody = self.funcBody
+    
+    local isEmited,changed = interfaceFunc(unpack(funcArgs))
+    
+    if isEmited then
+        funcBody(self)
+        
+       -- for key,childUnit in pairs(self.pool) do
+       --      childUnit:Do()
+       -- end;
+    end
 end;
 
 InterfaceUnit.log = function(self)
@@ -286,19 +341,58 @@ end
 local InterfaceUnitMT = {__call = function(self,...) return InterfaceUnit.new(...) end}
 
 setmetatable(InterfaceUnit, InterfaceUnitMT)
-
+-----------------------------------------------------------------------------------------------------------
 UI.Source = InterfaceUnit()
-a = InterfaceUnit(UI.Source)
-b = InterfaceUnit(UI.Source)
-c = InterfaceUnit(a)
-d = InterfaceUnit(a)
-e = InterfaceUnit(c)
-
-a:destroy(a)
+--a = InterfaceUnit(
+--    UI.Source,
+--    imgui.Begin,
+--    {"DockArea", nil, { "ImGuiWindowFlags_NoTitleBar", "ImGuiWindowFlags_NoResize", "ImGuiWindowFlags_NoMove", "ImGuiWindowFlags_NoBringToFrontOnFocus" }},
+--    function(self)
+--        imgui.BeginDockspace()
+--       -- self:ChildsDo()
+--        --for k,v in pairs (docks) do
+--        --    if v.view then
+--        --        imgui.SetNextDock(v.dock);
+--        --        if imgui.BeginDock(v.name,true) then
+--        --            if v.name == "Viewport" then
+--        --          --      imgui.Image(IMAGE, 800, 600)
+--        --            end
+--        --            imgui.EndDock()
+--        --        end
+--        --      
+--        --    end
+--        --end
+--        imgui.EndDockspace()
+--    end
+--)
+--b = InterfaceUnit(
+--    UI.Source,
+--    imgui.BeginDock,
+--    {"aa"},
+--    function(self)
+--        print(11)
+--        imgui.EndDock()
+--    end
+--)
+----b = InterfaceUnit(UI.Source)
+--c = InterfaceUnit(a)
+--d = InterfaceUnit(a)
+--e = InterfaceUnit(c)
+--
+--a:destroy(a)
 
 UI.Source:log()
 
 UI.Draw = function()
+   -- imgui.NewFrame()
+   -- 
+   -- --imgui.SetNextWindowPos(0, 10)
+   -- --imgui.SetNextWindowSize(love.graphics.getWidth(), love.graphics.getHeight()-10)
+   -- 
+   -- UI.Source:Do()
+   -- 
+   -- imgui.End()
+   -- imgui.Render();
     draw()
 end;
 

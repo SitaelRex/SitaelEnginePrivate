@@ -1,5 +1,5 @@
 
-SetEntityType = function(entity_name,params) --используется в hierarchy
+SetEntityType = function(entity_name,params) --вынести в hierarchy
     --local room = ProjectCore.modules.roomManager
     local currentRoom = room:getCurrentRoom()
     local result = currentRoom.hierarchy.SetEntityType(entity_name,params)
@@ -9,7 +9,7 @@ end
 
 ----------------------------
 ---------------------------------------------------------------Global Engine Utils
-function string:cut(reference) --сокращенный вырезатель gsub
+function string:cut(reference) 
     return self:gsub(reference, "")
 end;
 
@@ -26,9 +26,6 @@ end;
 Core = require 'libs/core'
 Interface = require 'libs/interface'
 UI = require 'libs/ui'
---pathManager = require 'modules/pathManager' -- нельзя вынести в интерфейс, потому что важен порядок инициализации. 
--- room.storage(как и прочие модули) нуждаются в path manager-e
---engineEvent =  require 'modules/engineEvent'
 
 ------------------------------------------------MAIN
 function love.load()
@@ -74,29 +71,21 @@ function love.load()
           --  print(sourceInfo)
         end 
     end 
-    }) 
------   -- setmetatable(_G,{index = function(...) print(...,_G) end})
------    -- можно сделать хранилище ядер
------    -- при создании ядра хранить его в определнном слое таблицы с ядрами
------    -- если про создании ядра фигурирует parent - слой ядра = слой родителя + 1
------    -- при поиске двигаемся перебором с самого верхнего уровня, до самого нижнего
+}) 
 
------    ------setup update pipeline
     Pipeline = EngineCore.modules.Pipeline
    
 end;
 
 function love.textinput(t)
     --console(t)
- --   EngineCore.modules.console(t)
 end
 --paused = true
-local startTime = 0 --= love.timer.getTime()
+local startTime = 0 
 local updateTime = 0
 local drawTime = 0
 
 function love.update(dt)
-    
     if not paused and ProjectCore.Update then
         ProjectCore.Update:Do()
     end
