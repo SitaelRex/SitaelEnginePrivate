@@ -114,8 +114,10 @@ end
 function love.textinput(t)
     imgui.TextInput(t)
     if not imgui.GetWantCaptureKeyboard() then
+        
         -- Pass event to the game
     end
+    console(t)
 end
 
 function love.keypressed(key)

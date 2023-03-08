@@ -2,7 +2,7 @@
 --error(input)
 -- #region setup 
 local console = {}
-
+include("input")
 setmetatable(console, {__index = _G})
 setfenv(1, console)
 
